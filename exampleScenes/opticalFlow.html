@@ -1,0 +1,183 @@
+
+<body onload="onLoad();">
+
+<script src="../js/thirdparty/jquery-1.11.3.min.js"></script>
+<script src="../js/thirdparty/three/three.min.js"></script>
+<script src="../js/thirdparty/three/libs/dat.gui.min.js"></script>
+
+<script src="../js/gl.js"></script>
+<script src="../js/gui.js"></script>
+<script src="../js/shaders.js"></script>
+<script src="../js/renderer.js"></script>
+<script src="../js/vidfilt.js"></script>
+
+<?/* ------------------------------------------------------------------*/?>
+<?/*                              video                                */?>
+<?/* ------------------------------------------------------------------*/?>
+
+<video id="video">
+    Your browser doesn't appear to support the HTML5 <code>&lt;video&gt;</code> element.
+</video>
+
+
+<?/* ------------------------------------------------------------------*/?>
+<?/*                        filter definition                          */?>
+<?/* ------------------------------------------------------------------*/?>
+
+<script>
+
+function Filter() {}
+Filter.prototype.init = function(vidfilt)
+{
+    let renderer  = vidfilt.getRenderer();
+	
+    this.params = {};
+    this.params.foo = 0.48484848484848486;
+    this.params.bar = 0.1127554615926709;
+    this.params.tone = [0.9609756097560975, 0.9609756097560975, 0.9609756097560975];
+        
+    vidfilt.showGUI(true);
+
+    /** renderer settings **/
+    renderer.exposure = 1.50105708245243;
+    renderer.gamma = 0.642706131078224;
+        
+    vidfilt.showGUI(true);
+}
+
+Filter.prototype.initGenerator = function()
+{
+    return `
+this.params = {};
+this.params.foo = ${this.params.foo};
+this.params.bar = ${this.params.bar};
+this.params.tone = [${this.params.tone[0]}, ${this.params.tone[1]}, ${this.params.tone[2]}];
+    `; 
+}
+
+Filter.prototype.program = function()
+{
+    return `
+uniform float foo;
+uniform float bar;
+uniform vec3 tone;
+
+vec4 dofilter(sampler2D videoFrame, 
+              sampler2D videoFrameMinus1,
+              sampler2D videoFrameMinus2,
+              sampler2D videoFrameMinus3,
+              vec2 uv, vec2 textureSize)
+{
+    vec2 dl = vec2(1.0/textureSize);
+
+    float Bxx = 0.0;
+    float Bxy = 0.0;
+    float Byy = 0.0;
+    float Bxt = 0.0;
+    float Byt = 0.0;
+
+    for (int i=-1; i<=1; i++) 
+    for (int j=-1; j<=1; j++) 
+    {
+        vec2 xij = uv + dl * vec2(float(i), float(j));
+        vec2 xij_dxp = xij + vec2(dl.x, 0.0);
+        vec2 xij_dxn = xij - vec2(dl.x, 0.0);
+        vec2 xij_dyp = xij + vec2(0.0, dl.y);
+        vec2 xij_dyn = xij - vec2(0.0, dl.y);
+
+        float bij       = length(texture(videoFrame, xij).xyz);
+        
+        vec3 L  = texture(videoFrameMinus3, xij).xyz;
+        //L += texture(videoFrameMinus2, xij).xyz;
+        //L += texture(videoFrameMinus3, xij).xyz;
+        float bij_dtp = length(L);
+
+        float bij_dxp = length(texture(videoFrame, xij_dxp).xyz);
+        float bij_dxn = length(texture(videoFrame, xij_dxn).xyz);
+        float bij_dyp = length(texture(videoFrame, xij_dyp).xyz);
+        float bij_dyn = length(texture(videoFrame, xij_dyn).xyz);
+
+        float Bx = 0.5*(bij_dxp - bij_dxn);
+        float By = 0.5*(bij_dyp - bij_dyn);
+        float Bt = (bij     - bij_dtp);
+
+        Bxx += Bx*Bx;
+        Bxy += Bx*By;
+        Byy += By*By;
+        Bxt += Bx*Bt;
+        Byt += By*Bt;
+    }
+
+    float det = Bxx*Byy - Bxy*Bxy;
+    float ninvdet = -1.0/det;
+    float u = (Byy*Bxt - Bxy*Byt) * ninvdet;
+    float v = (Bxx*Byt - Bxy*Bxt) * ninvdet;
+
+    float V = bar * sqrt(u*u + v*v);
+    float C = V;
+
+    return foo*texture(videoFrame, uv) + (1.0-foo)*vec4(0, C, 0, 1.0);
+}
+    `;
+}
+
+Filter.prototype.syncProgram = function(vidfilt, program) 
+{ 
+    program.uniformF("foo", this.params.foo); 
+    program.uniformF("bar", this.params.bar); 
+    program.uniform3Fv("tone", this.params.tone);
+}
+
+Filter.prototype.getName = function() { return 'test'; }
+Filter.prototype.getURL = function() { return "https://bar.html"; }
+
+Filter.prototype.initGui = function(gui) 
+{ 
+    gui.addSlider(this.params, {name: 'foo', min: 0.0, max: 1.0});
+    gui.addSlider(this.params, {name: 'bar', min: 0.0, max: 5.0});
+    gui.addColor(this.params, "tone", 1.0);
+}
+
+</script>
+
+
+<?/* ------------------------------------------------------------------*/?>
+<?/*                            main loop                              */?>
+<?/* ------------------------------------------------------------------*/?>
+
+<script type="text/javascript">
+
+var videoElement;
+var vidfilt;
+var intervalID;
+
+
+function onLoad() 
+{     
+    vidfilt = new Vidfilt(new Filter());
+
+    videoElement = document.getElementById('video');
+	videoElement.addEventListener('canplaythrough', startVideo, true);
+    videoElement.addEventListener('ended', videoDone, true);
+    
+    videoElement.preload = 'auto';  
+    videoElement.src = 'https://rawgit.com/portsmouth/testvids/master/eyecontact.mp4';
+    //videoElement.src = 'https://rawgit.com/portsmouth/testvids/master/Woman.mp4';
+    videoElement.crossOrigin = "";
+}
+
+function startVideo() 
+{
+    videoElement.play();
+    let THIS = vidfilt;
+    intervalID = setInterval(function() { THIS.render(); }, 15);
+}
+
+function videoDone() 
+{
+    videoElement.play();
+}
+
+</script>
+
+</body>

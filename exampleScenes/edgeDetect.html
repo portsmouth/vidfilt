@@ -1,0 +1,163 @@
+
+<body onload="onLoad();">
+
+<script src="../js/thirdparty/jquery-1.11.3.min.js"></script>
+<script src="../js/thirdparty/three/three.min.js"></script>
+<script src="../js/thirdparty/three/libs/dat.gui.min.js"></script>
+
+<script src="../js/gl.js"></script>
+<script src="../js/gui.js"></script>
+<script src="../js/shaders.js"></script>
+<script src="../js/renderer.js"></script>
+<script src="../js/vidfilt.js"></script>
+
+<?/* ------------------------------------------------------------------*/?>
+<?/*                              video                                */?>
+<?/* ------------------------------------------------------------------*/?>
+
+<video id="video">
+    Your browser doesn't appear to support the HTML5 <code>&lt;video&gt;</code> element.
+</video>
+
+
+<?/* ------------------------------------------------------------------*/?>
+<?/*                        filter definition                          */?>
+<?/* ------------------------------------------------------------------*/?>
+
+<script>
+
+function Filter() {}
+Filter.prototype.init = function(vidfilt)
+{
+    let renderer  = vidfilt.getRenderer();
+        
+    this.params = {};
+    this.params.contrast = 1.6345229278476483;
+    this.params.tone = [0.9609756097560975, 0.9609756097560975, 0.9609756097560975];
+        
+    vidfilt.showGUI(true);
+    
+    /** renderer settings **/
+    renderer.exposure = 0;
+    renderer.gamma = 1.0;
+}
+
+Filter.prototype.initGenerator = function()
+{
+    return `
+this.params = {};
+this.params.contrast = ${this.params.contrast};
+this.params.tone = [${this.params.tone[0]}, ${this.params.tone[1]}, ${this.params.tone[2]}];
+    `; 
+}
+
+Filter.prototype.program = function()
+{
+    return `
+uniform float contrast;
+uniform vec3 tone;
+
+mat3 Gx = mat3(-1.0, 0.0, 1.0,
+               -2.0, 0.0, 2.0,
+               -1.0, 0.0, 1.0);
+
+mat3 Gy = mat3(-1.0, -2.0, -1.0,
+                0.0,  0.0,  0.0,
+                1.0,  2.0,  1.0);
+
+vec4 dofilter(sampler2D videoFrame, 
+              sampler2D videoFrameMinus1,
+              sampler2D videoFrameMinus2,
+              sampler2D videoFrameMinus3,
+              vec2 uv, vec2 textureSize)
+{
+    vec3 h = vec3(0.0);
+    vec3 v = vec3(0.0);
+ 
+    for (int i = 0; i < 3; i++) 
+    {
+        for (int j = 0; j < 3; j++) 
+        {
+            vec2 d = vec2(float(i), float(j)) / textureSize;
+            vec3 pixel = texture(videoFrame, uv+d).xyz;
+            h += pixel * Gx[i][j];
+            v += pixel * Gy[i][j];  
+        }
+    }
+    
+    float edgeIntensity = sqrt(dot(h,h) + dot(v,v));
+
+    vec4 colorOrig = texture(videoFrame, uv);
+
+    vec4 edgeColor = mix(        
+        vec4(tone, 1.0),
+        colorOrig,
+        contrast*edgeIntensity);
+
+    vec4 color = mix(
+                colorOrig,
+                edgeColor,
+                step(0.5, uv.x));
+        
+    return color;
+}
+    `;
+}
+
+Filter.prototype.syncProgram = function(vidfilt, program) 
+{ 
+    program.uniformF("contrast", this.params.contrast); 
+    program.uniform3Fv("tone", this.params.tone);
+}
+
+Filter.prototype.getName = function() { return 'test'; }
+Filter.prototype.getURL = function() { return "https://bar.html"; }
+
+Filter.prototype.initGui = function(gui) 
+{ 
+    gui.addSlider(this.params, {name: 'contrast', min: 0.0, max: 5.0});
+    gui.addColor(this.params, "tone", 1.0);
+}
+
+</script>
+
+
+<?/* ------------------------------------------------------------------*/?>
+<?/*                            main loop                              */?>
+<?/* ------------------------------------------------------------------*/?>
+
+<script type="text/javascript">
+
+var videoElement;
+var vidfilt;
+var intervalID;
+
+
+function onLoad() 
+{     
+    vidfilt = new Vidfilt(new Filter());
+
+    videoElement = document.getElementById('video');
+	videoElement.addEventListener('canplaythrough', startVideo, true);
+    videoElement.addEventListener('ended', videoDone, true);
+    
+    videoElement.preload = 'auto';  
+    videoElement.src = 'https://rawgit.com/portsmouth/testvids/master/eyecontact.mp4';
+    videoElement.crossOrigin = "";
+}
+
+function startVideo() 
+{
+    videoElement.play();
+    let THIS = vidfilt;
+    intervalID = setInterval(function() { THIS.render(); }, 15);
+}
+
+function videoDone() 
+{
+    videoElement.play();
+}
+
+</script>
+
+</body>
