@@ -295,11 +295,11 @@ Vidfilt.prototype.onClick = function(event)
 {
 	if (this.onVidfiltLink) 
 	{
-    	window.location = "https://github.com/portsmouth/vidfilt";
+    	window.open("https://github.com/portsmouth/vidfilt");
     }
     if (this.onUserLink) 
-	{
-    	window.location = this.filterURL;
+	{		
+		window.open(this.filterURL);		
     }
 	event.preventDefault();
 }
