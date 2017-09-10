@@ -215,18 +215,18 @@ Vidfilt.prototype.render = function()
 	  	this.textCtx.strokeText('Vidfilt v'+ver[0]+'.'+ver[1]+'.'+ver[2], 14, 20);
 	  	this.textCtx.fillText('Vidfilt v'+ver[0]+'.'+ver[1]+'.'+ver[2], 14, 20);
 	  	
-	  	if (this.sceneName != '')
+	  	if (this.filterName != '')
 	  	{
 	  		this.textCtx.fillStyle = "#ffaa22";
-	  		this.textCtx.strokeText(this.sceneName, 14, this.textCtx.canvas.height-25);
-	  		this.textCtx.fillText(this.sceneName, 14, this.textCtx.canvas.height-25);
+	  		this.textCtx.strokeText(this.filterName, 14, this.textCtx.canvas.height-25);
+	  		this.textCtx.fillText(this.filterName, 14, this.textCtx.canvas.height-25);
 	  	}
-		if (this.sceneURL != '')
+		if (this.filterURL != '')
 		{
 			if (this.onUserLink) this.textCtx.fillStyle = "#aaccff";
 	  		else                 this.textCtx.fillStyle = "#55aaff";
-	  		this.textCtx.strokeText(this.sceneURL, 14, this.textCtx.canvas.height-40);
-	  		this.textCtx.fillText(this.sceneURL, 14, this.textCtx.canvas.height-40);
+	  		this.textCtx.strokeText(this.filterURL, 14, this.textCtx.canvas.height-40);
+	  		this.textCtx.fillText(this.filterURL, 14, this.textCtx.canvas.height-40);
 		}
 	}
 
