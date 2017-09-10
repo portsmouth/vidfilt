@@ -313,9 +313,9 @@ Vidfilt.prototype.onDocumentMouseMove = function(event)
 	let linkWidth = this.textCtx.measureText('Vidfilt vX.X.X').width;
 	if (x>14 && x<14+linkWidth && y>15 && y<25) this.onVidfiltLink = true;
 	else this.onVidfiltLink = false;
-	if (this.sceneURL != '')
+	if (this.filterURL != '')
 	{
-		linkWidth = this.textCtx.measureText(this.sceneURL).width;
+		linkWidth = this.textCtx.measureText(this.filterURL).width;
 		if (x>14 && x<14+linkWidth && y>this.height-45 && y<this.height-35) this.onUserLink = true;
 		else this.onUserLink = false;
 	}
