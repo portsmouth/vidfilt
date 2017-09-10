@@ -70,6 +70,7 @@ vec4 dofilter(sampler2D videoFrame,
 {
     vec2 dl = vec2(1.0/textureSize);
 
+    // Apply basic Lucas-Kanade optical flow estimation algorithm
     float Bxx = 0.0;
     float Bxy = 0.0;
     float Byy = 0.0;
@@ -128,7 +129,7 @@ Filter.prototype.syncProgram = function(vidfilt, program)
     program.uniform3Fv("tone", this.params.tone);
 }
 
-Filter.prototype.getName = function() { return 'Simple optical flow experiment'; }
+Filter.prototype.getName = function() { return 'Simple Lucas-Kanade optical flow experiment'; }
 Filter.prototype.getURL = function() { return "https://github.com/portsmouth/vidfilt/blob/master/exampleScenes/opticalFlow.html"; }
 
 Filter.prototype.initGui = function(gui) 
