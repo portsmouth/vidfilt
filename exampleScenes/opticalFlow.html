@@ -34,7 +34,7 @@ Filter.prototype.init = function(vidfilt)
     this.params = {};
     this.params.foo = 0.48484848484848486;
     this.params.bar = 0.1127554615926709;
-    this.params.tone = [0.9609756097560975, 0.9609756097560975, 0.9609756097560975];
+    this.params.tone = [0.18627450980392157, 0.47347174163783134, 1];
         
     vidfilt.showGUI(true);
 
@@ -116,7 +116,7 @@ vec4 dofilter(sampler2D videoFrame,
     float V = bar * sqrt(u*u + v*v);
     float C = V;
 
-    return foo*texture(videoFrame, uv) + (1.0-foo)*vec4(0, C, 0, 1.0);
+    return foo*texture(videoFrame, uv) + (1.0-foo)*C*vec4(tone, 1.0);
 }
     `;
 }
