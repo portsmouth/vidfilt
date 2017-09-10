@@ -105,13 +105,12 @@ Interface to the renderer.
     * [.getURL()](#Filter+getURL) ⇒ <code>String</code>
     * [.program()](#Filter+program) ⇒ <code>String</code>
     * [.initGui(gui)](#Filter+initGui)
-    * [.syncProgram(gravy, shader)](#Filter+syncProgram)
+    * [.syncProgram(vidfilt, program)](#Filter+syncProgram)
 
 <a name="Filter+init"></a>
 
 ### filter.init(gravy)
-Optionally (but usually), provide this function to set potential and raycaster initial state.
-This is called only once during execution, on loading the HTML page (or on global reset via 'R' key).
+Optionally (but usually), provide this function to set initial state.
 
 **Kind**: instance method of [<code>Filter</code>](#Filter)  
 
@@ -143,11 +142,15 @@ Optional clickable URL (displayed in UI)
 <a name="Filter+program"></a>
 
 ### filter.program() ⇒ <code>String</code>
-Returns a chunk of GLSL code defining the 3D gravitational potential in which the light propagates.
-Light is deflected according to the local gradient of the potential.
-This function is mandatory! The code *must* define the function:
+Returns a chunk of GLSL code defining the video filter. The API is be properly defined, but currently
+the filter is defined by a function of signature:
 ```glsl
-     float POTENTIAL(vec3 X);
+    vec4 dofilter(sampler2D videoFrame,        // texture containing current frame of the video 
+                  sampler2D videoFrameMinus1,  // texture containing current-1 frame of the video 
+                  sampler2D videoFrameMinus2,  // texture containing current-2 frame of the video 
+                  sampler2D videoFrameMinus3,  // texture containing current-3 frame of the video 
+                  vec2 uv,                     // UV coords in [0,1] of the pixel whose color this function modifies
+                  vec2 textureSize)            // size in pixels of the frame textures
 ```
 
 **Kind**: instance method of [<code>Filter</code>](#Filter)  
@@ -164,7 +167,7 @@ Optional. Set up gui and callbacks for this scene via dat.GUI
 
 <a name="Filter+syncProgram"></a>
 
-### filter.syncProgram(gravy, shader)
+### filter.syncProgram(vidfilt, program)
 Optional. Called whenever the UI is changed,
 /* and must sync the params of the GLSL program with the current UI settings
 
@@ -172,8 +175,8 @@ Optional. Called whenever the UI is changed,
 
 | Param | Type | Description |
 | --- | --- | --- |
-| gravy | <code>Gravy</code> | The Gravy object |
-| shader | [<code>this.Shader</code>](#GLU.this.Shader) | wrapper of webGL fragment shader, see [this.Shader](#GLU.this.Shader) |
+| vidfilt | [<code>Vidfilt</code>](#Vidfilt) | The Vidfilt object |
+| program | [<code>this.Shader</code>](#GLU.this.Shader) | wrapper of webGL program, see [this.Shader](#GLU.this.Shader) |
 
 <a name="GLU"></a>
 

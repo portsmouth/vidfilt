@@ -5,8 +5,7 @@
 function Filter() {}
 
 /**
-* Optionally (but usually), provide this function to set potential and raycaster initial state.
-* This is called only once during execution, on loading the HTML page (or on global reset via 'R' key).
+* Optionally (but usually), provide this function to set initial state.
 * @param {vidfilt} gravy - The Vidfilt object
 */
 Filter.prototype.init = function(vidfilt)
@@ -25,7 +24,6 @@ Filter.prototype.initGenerator = function()
 
 }
 
-
 /**
 * Optional name (displayed in UI)
 * @returns {String}
@@ -43,11 +41,15 @@ Filter.prototype.getURL = function() {  }
 /////////////////////////////////////////////////////////////////////////////////////
 
 /**
-* Returns a chunk of GLSL code defining the 3D gravitational potential in which the light propagates.
-* Light is deflected according to the local gradient of the potential.
-* This function is mandatory! The code *must* define the function:
+* Returns a chunk of GLSL code defining the video filter. The API is be properly defined, but currently
+* the filter is defined by a function of signature:
 *```glsl
-*      float POTENTIAL(vec3 X);
+*     vec4 dofilter(sampler2D videoFrame,        // texture containing current frame of the video 
+*                   sampler2D videoFrameMinus1,  // texture containing current-1 frame of the video 
+*                   sampler2D videoFrameMinus2,  // texture containing current-2 frame of the video 
+*                   sampler2D videoFrameMinus3,  // texture containing current-3 frame of the video 
+*                   vec2 uv,                     // UV coords in [0,1] of the pixel whose color this function modifies
+*                   vec2 textureSize)            // size in pixels of the frame textures
 *```
 * @returns {String}
 */
@@ -68,8 +70,8 @@ Filter.prototype.initGui = function(gui)
 /**
 * Optional. Called whenever the UI is changed,
 /* and must sync the params of the GLSL program with the current UI settings
-* @param {Gravy} gravy - The Gravy object
-* @param {GLU.this.Shader} shader - wrapper of webGL fragment shader, see {@link GLU.this.Shader}
+* @param {Vidfilt} vidfilt - The Vidfilt object
+* @param {GLU.this.Shader} program - wrapper of webGL program, see {@link GLU.this.Shader}
 */
 Filter.prototype.syncProgram = function(vidfilt, program)
 {
