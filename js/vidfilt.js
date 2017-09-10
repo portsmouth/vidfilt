@@ -120,7 +120,7 @@ Vidfilt.prototype.showGUI = function(show)
 	this.guiVisible = show;
 }
 
-Vidfilt.prototype.dumpScene = function()
+Vidfilt.prototype.dumpFilter = function()
 {
 	let camera = this.camera;
 	let controls = this.camControls;
@@ -299,7 +299,7 @@ Vidfilt.prototype.onClick = function(event)
     }
     if (this.onUserLink) 
 	{
-    	window.location = this.sceneURL;
+    	window.location = this.filterURL;
     }
 	event.preventDefault();
 }
@@ -354,8 +354,8 @@ Vidfilt.prototype.onkeydown = function(event)
 			vidfilt.getGUI().toggleHide();
 			break;
 		
-		case 79: // O key: output scene settings code to console
-			let code = this.dumpScene();
+		case 79: // O key: output filter settings code to console
+			let code = this.dumpFilter();
 			console.log(code);
 			break;
 	}
