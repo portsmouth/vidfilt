@@ -1,6 +1,6 @@
 var Shaders = {
 
-'render-fragment-shader': `#version 300 es
+'render-fragment-shader': `
 precision highp float;
 
 uniform sampler2D videoFrame;
@@ -38,7 +38,7 @@ void main()
 }
 `,
 
-'render-vertex-shader': `#version 300 es
+'render-vertex-shader': `
 precision highp float;
 
 in vec3 Position;
