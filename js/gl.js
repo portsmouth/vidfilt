@@ -21,11 +21,6 @@ var GLU = {};
 		} catch (e) {}
 		if (!gl) this.fail("Could not initialise WebGL");
 		this.gl = gl;
-
-		//console.log('Supported webGL extensions: ' + gl.getSupportedExtensions());
-		this.floatBufExt = gl.getExtension("EXT_color_buffer_float");
-		this.floatLinExt = gl.getExtension("OES_texture_float_linear");
-		if (!this.floatBufExt || !this.floatLinExt) this.fail("Your platform does not support float textures");
 	}
 
 	this.glTypeSize = function(type) 
