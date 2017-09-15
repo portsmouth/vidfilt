@@ -9,8 +9,7 @@ uniform float exposure;
 uniform float invGamma;
 uniform vec2 textureSize;
 
-in vec2 vTexCoord;
-out vec4 outputColor;
+varying vec2 vTexCoord;
 
 // User-code injection
 FILTER
@@ -31,5 +30,5 @@ void main()
 	// Apply gamma
 	C = pow(C, vec3(invGamma));
 
-	outputColor = vec4(C, 1.0);
+	gl_FragColor = vec4(C, 1.0);
 }

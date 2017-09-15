@@ -4,7 +4,12 @@
 <script src="../js/thirdparty/jquery-1.11.3.min.js"></script>
 <script src="../js/thirdparty/three/three.min.js"></script>
 <script src="../js/thirdparty/three/libs/dat.gui.min.js"></script>
-<script src="https://cdn.rawgit.com/portsmouth/vidfilt/1d75c17a/js/compiled/vidfilt.min.js"></script>
+
+<script src="../js/gl.js"></script>
+<script src="../js/gui.js"></script>
+<script src="../js/shaders.js"></script>
+<script src="../js/renderer.js"></script>
+<script src="../js/vidfilt.js"></script>
 
 <?/* ------------------------------------------------------------------*/?>
 <?/*                              video                                */?>
@@ -81,17 +86,17 @@ vec4 dofilter(sampler2D videoFrame,
         vec2 xij_dyp = xij + vec2(0.0, dl.y);
         vec2 xij_dyn = xij - vec2(0.0, dl.y);
 
-        float bij       = length(texture(videoFrame, xij).xyz);
+        float bij       = length(texture2D(videoFrame, xij).xyz);
         
-        vec3 L  = texture(videoFrameMinus3, xij).xyz;
+        vec3 L  = texture2D(videoFrameMinus3, xij).xyz;
         //L += texture(videoFrameMinus2, xij).xyz;
         //L += texture(videoFrameMinus3, xij).xyz;
         float bij_dtp = length(L);
 
-        float bij_dxp = length(texture(videoFrame, xij_dxp).xyz);
-        float bij_dxn = length(texture(videoFrame, xij_dxn).xyz);
-        float bij_dyp = length(texture(videoFrame, xij_dyp).xyz);
-        float bij_dyn = length(texture(videoFrame, xij_dyn).xyz);
+        float bij_dxp = length(texture2D(videoFrame, xij_dxp).xyz);
+        float bij_dxn = length(texture2D(videoFrame, xij_dxn).xyz);
+        float bij_dyp = length(texture2D(videoFrame, xij_dyp).xyz);
+        float bij_dyn = length(texture2D(videoFrame, xij_dyn).xyz);
 
         float Bx = 0.5*(bij_dxp - bij_dxn);
         float By = 0.5*(bij_dyp - bij_dyn);
@@ -112,7 +117,7 @@ vec4 dofilter(sampler2D videoFrame,
     float V = bar * sqrt(u*u + v*v);
     float C = V;
 
-    return foo*texture(videoFrame, uv) + (1.0-foo)*C*vec4(tone, 1.0);
+    return foo*texture2D(videoFrame, uv) + (1.0-foo)*C*vec4(tone, 1.0);
 }
     `;
 }

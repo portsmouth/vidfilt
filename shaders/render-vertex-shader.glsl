@@ -1,8 +1,8 @@
 precision highp float;
 
-in vec3 Position;
-in vec2 TexCoord;
-out vec2 vTexCoord;
+attribute vec3 Position;
+attribute vec2 TexCoord;
+varying vec2 vTexCoord;
 
 void main(void)
 {

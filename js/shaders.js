@@ -1,6 +1,6 @@
 var Shaders = {
 
-'render-fragment-shader': `#version 300 es
+'render-fragment-shader': `
 precision highp float;
 
 uniform sampler2D videoFrame;
@@ -12,8 +12,7 @@ uniform float exposure;
 uniform float invGamma;
 uniform vec2 textureSize;
 
-in vec2 vTexCoord;
-out vec4 outputColor;
+varying vec2 vTexCoord;
 
 // User-code injection
 FILTER
@@ -34,16 +33,16 @@ void main()
 	// Apply gamma
 	C = pow(C, vec3(invGamma));
 
-	outputColor = vec4(C, 1.0);
+	gl_FragColor = vec4(C, 1.0);
 }
 `,
 
-'render-vertex-shader': `#version 300 es
+'render-vertex-shader': `
 precision highp float;
 
-in vec3 Position;
-in vec2 TexCoord;
-out vec2 vTexCoord;
+attribute vec3 Position;
+attribute vec2 TexCoord;
+varying vec2 vTexCoord;
 
 void main(void)
 {

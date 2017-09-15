@@ -4,7 +4,12 @@
 <script src="../js/thirdparty/jquery-1.11.3.min.js"></script>
 <script src="../js/thirdparty/three/three.min.js"></script>
 <script src="../js/thirdparty/three/libs/dat.gui.min.js"></script>
-<script src="https://cdn.rawgit.com/portsmouth/vidfilt/1d75c17a/js/compiled/vidfilt.min.js"></script>
+
+<script src="../js/gl.js"></script>
+<script src="../js/gui.js"></script>
+<script src="../js/shaders.js"></script>
+<script src="../js/renderer.js"></script>
+<script src="../js/vidfilt.js"></script>
 
 
 <?/* ------------------------------------------------------------------*/?>
@@ -75,7 +80,7 @@ vec4 dofilter(sampler2D videoFrame,
         for (int j = 0; j < 3; j++) 
         {
             vec2 d = vec2(float(i), float(j)) / textureSize;
-            vec3 pixel = texture(videoFrame, uv+d).xyz;
+            vec3 pixel = texture2D(videoFrame, uv+d).xyz;
             h += pixel * Gx[i][j];
             v += pixel * Gy[i][j];  
         }
@@ -83,7 +88,7 @@ vec4 dofilter(sampler2D videoFrame,
     
     float edgeIntensity = sqrt(dot(h,h) + dot(v,v));
 
-    vec4 colorOrig = texture(videoFrame, uv);
+    vec4 colorOrig = texture2D(videoFrame, uv);
 
     vec4 edgeColor = mix(        
         vec4(tone, 1.0),
