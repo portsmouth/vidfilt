@@ -2,9 +2,9 @@
 # vidfilt
 A video player with programmable filters. Some basic examples:
 
-[Optical flow](https://rawgit.com/portsmouth/vidfilt/master/exampleScenes/opticalFlow.html)
+[Optical flow](https://cdn.rawgit.com/portsmouth/vidfilt/882068eb/exampleScenes/opticalFlow.html)
 
-[Edge detection](https://rawgit.com/portsmouth/vidfilt/master/exampleScenes/edgeDetect.html)
+[Edge detection](https://cdn.rawgit.com/portsmouth/vidfilt/882068eb/exampleScenes/edgeDetect.html)
 
 <dl>
 <dt><a href="docs/API.md">Docs</a></dt>
