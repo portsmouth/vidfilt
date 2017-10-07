@@ -52,7 +52,7 @@ this.params = {};
 this.params.foo = ${this.params.foo};
 this.params.bar = ${this.params.bar};
 this.params.tone = [${this.params.tone[0]}, ${this.params.tone[1]}, ${this.params.tone[2]}];
-    `; 
+    `;
 }
 
 Filter.prototype.program = function()
@@ -62,7 +62,7 @@ uniform float foo;
 uniform float bar;
 uniform vec3 tone;
 
-vec4 dofilter(sampler2D videoFrame, 
+vec4 dofilter(sampler2D videoFrame,
               sampler2D videoFrameMinus1,
               sampler2D videoFrameMinus2,
               sampler2D videoFrameMinus3,
@@ -77,8 +77,8 @@ vec4 dofilter(sampler2D videoFrame,
     float Bxt = 0.0;
     float Byt = 0.0;
 
-    for (int i=-1; i<=1; i++) 
-    for (int j=-1; j<=1; j++) 
+    for (int i=-1; i<=1; i++)
+    for (int j=-1; j<=1; j++)
     {
         vec2 xij = uv + dl * vec2(float(i), float(j));
         vec2 xij_dxp = xij + vec2(dl.x, 0.0);
@@ -122,18 +122,18 @@ vec4 dofilter(sampler2D videoFrame,
     `;
 }
 
-Filter.prototype.syncProgram = function(vidfilt, program) 
-{ 
-    program.uniformF("foo", this.params.foo); 
-    program.uniformF("bar", this.params.bar); 
+Filter.prototype.syncProgram = function(vidfilt, program)
+{
+    program.uniformF("foo", this.params.foo);
+    program.uniformF("bar", this.params.bar);
     program.uniform3Fv("tone", this.params.tone);
 }
 
 Filter.prototype.getName = function() { return 'Simple Lucas-Kanade optical flow experiment'; }
 Filter.prototype.getURL = function() { return "https://github.com/portsmouth/vidfilt/blob/master/exampleScenes/opticalFlow.html"; }
 
-Filter.prototype.initGui = function(gui) 
-{ 
+Filter.prototype.initGui = function(gui)
+{
     gui.addSlider(this.params, {name: 'foo', min: 0.0, max: 1.0});
     gui.addSlider(this.params, {name: 'bar', min: 0.0, max: 5.0});
     gui.addColor(this.params, "tone", 1.0);
@@ -153,27 +153,29 @@ var vidfilt;
 var intervalID;
 
 
-function onLoad() 
-{     
+function onLoad()
+{
     vidfilt = new Vidfilt(new Filter());
 
     videoElement = document.getElementById('video');
 	videoElement.addEventListener('canplaythrough', startVideo, true);
     videoElement.addEventListener('ended', videoDone, true);
     
-    videoElement.preload = 'auto';  
-    videoElement.src = 'https://rawgit.com/portsmouth/testvids/master/eyecontact.mp4';
+    videoElement.preload = 'auto';
+    //videoElement.src = 'https://rawgit.com/portsmouth/testvids/master/eyecontact.mp4';
+    videoElement.src = 'https://rawgit.com/portsmouth/testvids/master/bladerunnerTheJump.mp4'
+    
     videoElement.crossOrigin = "";
 }
 
-function startVideo() 
+function startVideo()
 {
     videoElement.play();
     let THIS = vidfilt;
     intervalID = setInterval(function() { THIS.render(); }, 15);
 }
 
-function videoDone() 
+function videoDone()
 {
     videoElement.play();
 }
