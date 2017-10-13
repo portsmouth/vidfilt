@@ -1,7 +1,7 @@
 
-/** 
+/**
 * Interface to the renderer.
-* @constructor 
+* @constructor
 * @property {number} [exposure=3.0]             - image exposure, on a log scale
 * @property {number} [gamma=2.2]                - image gamma correction
 */
@@ -74,7 +74,7 @@ Renderer.prototype.isEnabled = function()
 	return this.enabled;
 }
 
-Renderer.prototype.render = function()
+Renderer.prototype.render = function(videoElement, new_frame = false)
 {
 	var gl = GLU.gl;
 
@@ -84,7 +84,7 @@ Renderer.prototype.render = function()
 	let filterObj = vidfilt.getFilter();
 	if (filterObj==null) return;
 	this.filterProgram.bind();
-	if (typeof filterObj.syncProgram !== "undefined") 
+	if (typeof filterObj.syncProgram !== "undefined")
 	{
 		filterObj.syncProgram(vidfilt, this.filterProgram);
 	}
@@ -125,7 +125,8 @@ Renderer.prototype.render = function()
 	var frame_time_ms = (timer_end - timer_start);
 	this.time_ms += frame_time_ms;
 
-	this.frameNum += 1;
+  if (new_frame)
+	 this.frameNum += 1;
 }
 
 Renderer.prototype.resize = function(width, height)
@@ -150,4 +151,3 @@ Renderer.prototype.resize = function(width, height)
 
 	this.reset();
 }
-

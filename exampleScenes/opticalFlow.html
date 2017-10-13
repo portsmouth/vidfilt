@@ -11,13 +11,6 @@
 <script src="../js/renderer.js"></script>
 <script src="../js/vidfilt.js"></script>
 
-<?/* ------------------------------------------------------------------*/?>
-<?/*                              video                                */?>
-<?/* ------------------------------------------------------------------*/?>
-
-<video id="video">
-    Your browser doesn't appear to support the HTML5 <code>&lt;video&gt;</code> element.
-</video>
 
 
 <?/* ------------------------------------------------------------------*/?>
@@ -30,18 +23,20 @@ function Filter() {}
 Filter.prototype.init = function(vidfilt)
 {
     let renderer  = vidfilt.getRenderer();
-	
+    	
     this.params = {};
-    this.params.foo = 0.48484848484848486;
-    this.params.bar = 0.1127554615926709;
-    this.params.tone = [0.18627450980392157, 0.47347174163783134, 1];
+    this.params.foo = 15.398355455637336;
+    this.params.bar = 0.1407849641658271;
+    this.params.fud = 0.1781809702723749;
+    this.params.gam = 2.5957227768074365;
+    this.params.tone = [1, 1, 1];
         
     vidfilt.showGUI(true);
 
     /** renderer settings **/
-    renderer.exposure = 1.50105708245243;
-    renderer.gamma = 0.642706131078224;
-        
+    renderer.exposure = -2.872761189105004;
+    renderer.gamma = 2.5869237165470724;
+
     vidfilt.showGUI(true);
 }
 
@@ -51,6 +46,8 @@ Filter.prototype.initGenerator = function()
 this.params = {};
 this.params.foo = ${this.params.foo};
 this.params.bar = ${this.params.bar};
+this.params.fud = ${this.params.fud};
+this.params.gam = ${this.params.gam};
 this.params.tone = [${this.params.tone[0]}, ${this.params.tone[1]}, ${this.params.tone[2]}];
     `;
 }
@@ -60,7 +57,11 @@ Filter.prototype.program = function()
     return `
 uniform float foo;
 uniform float bar;
+uniform float fud;
+uniform float gam;
 uniform vec3 tone;
+
+#define SUM_RGB(v) ((v).r + (v).g + (v).b)
 
 vec4 dofilter(sampler2D videoFrame,
               sampler2D videoFrameMinus1,
@@ -68,6 +69,47 @@ vec4 dofilter(sampler2D videoFrame,
               sampler2D videoFrameMinus3,
               vec2 uv, vec2 textureSize)
 {
+    vec3 c_curr = texture2D(videoFrame, uv).rgb;
+    vec3 c_prev = texture2D(videoFrameMinus3, uv).rgb;
+    vec3 dt_ = c_curr - c_prev;
+    
+    vec2 dl = vec2(1.0/textureSize);
+    vec2 xij_dxp = uv + vec2(dl.x, 0.0);
+    vec2 xij_dxn = uv - vec2(dl.x, 0.0);
+    vec2 xij_dyp = uv + vec2(0.0, dl.y);
+    vec2 xij_dyn = uv - vec2(0.0, dl.y);
+    
+    vec3 dx_curr = 0.5 * (texture2D(videoFrame, xij_dxp).rgb       - texture2D(videoFrame, xij_dxn).rgb);
+    vec3 dy_curr = 0.5 * (texture2D(videoFrame, xij_dyp).rgb       - texture2D(videoFrame, xij_dyn).rgb);
+    vec3 dx_prev = 0.5 * (texture2D(videoFrameMinus2, xij_dxp).rgb - texture2D(videoFrameMinus2, xij_dxn).rgb);
+    vec3 dy_prev = 0.5 * (texture2D(videoFrameMinus2, xij_dyp).rgb - texture2D(videoFrameMinus2, xij_dyn).rgb);
+    
+    vec3 dx_ = dx_curr + dx_prev;
+    vec3 dy_ = dy_curr + dy_prev;
+    float dt = SUM_RGB(dt_), dx = SUM_RGB(dx_), dy = SUM_RGB(dy_);
+    
+    // gradient length
+    float dd = sqrt(dx*dx + dy*dy + fud);
+  
+    // optical flow
+    vec2 flow = foo * dt * vec2(dx, dy) / dd;
+    
+    // threshold
+    float len = sqrt(flow.x*flow.x + flow.y*flow.y);
+      
+    vec3 Cflow = vec3(tone.x*flow.x/(1.0+flow.x), len, tone.z*flow.y/(1.0+flow.y));
+    Cflow.r = pow(Cflow.r, gam);
+    Cflow.g = pow(Cflow.g, gam);
+    Cflow.b = pow(Cflow.b, gam);
+
+    float R = mix(Cflow.r, c_curr.r, bar);
+    float G = mix(Cflow.g, c_curr.g, bar);
+    float B = mix(Cflow.b, c_curr.b, bar);
+    
+    return vec4(vec3(R, G, B), 1.0);
+    
+    /*
+    vec3 c_curr = texture2D(videoFrame, uv).rgb;
     vec2 dl = vec2(1.0/textureSize);
 
     // Apply basic Lucas-Kanade optical flow estimation algorithm
@@ -76,7 +118,7 @@ vec4 dofilter(sampler2D videoFrame,
     float Byy = 0.0;
     float Bxt = 0.0;
     float Byt = 0.0;
-
+    
     for (int i=-1; i<=1; i++)
     for (int j=-1; j<=1; j++)
     {
@@ -86,21 +128,19 @@ vec4 dofilter(sampler2D videoFrame,
         vec2 xij_dyp = xij + vec2(0.0, dl.y);
         vec2 xij_dyn = xij - vec2(0.0, dl.y);
 
-        float bij       = length(texture2D(videoFrame, xij).xyz);
+        float bij = SUM_RGB(texture2D(videoFrame, xij).xyz);
         
         vec3 L  = texture2D(videoFrameMinus3, xij).xyz;
-        //L += texture(videoFrameMinus2, xij).xyz;
-        //L += texture(videoFrameMinus3, xij).xyz;
-        float bij_dtp = length(L);
+        float bij_dtp = SUM_RGB(L);
 
-        float bij_dxp = length(texture2D(videoFrame, xij_dxp).xyz);
-        float bij_dxn = length(texture2D(videoFrame, xij_dxn).xyz);
-        float bij_dyp = length(texture2D(videoFrame, xij_dyp).xyz);
-        float bij_dyn = length(texture2D(videoFrame, xij_dyn).xyz);
+        float bij_dxp = SUM_RGB(texture2D(videoFrame, xij_dxp).xyz);
+        float bij_dxn = SUM_RGB(texture2D(videoFrame, xij_dxn).xyz);
+        float bij_dyp = SUM_RGB(texture2D(videoFrame, xij_dyp).xyz);
+        float bij_dyn = SUM_RGB(texture2D(videoFrame, xij_dyn).xyz);
 
         float Bx = 0.5*(bij_dxp - bij_dxn);
         float By = 0.5*(bij_dyp - bij_dyn);
-        float Bt = (bij     - bij_dtp);
+        float Bt =     (bij     - bij_dtp);
 
         Bxx += Bx*Bx;
         Bxy += Bx*By;
@@ -109,15 +149,19 @@ vec4 dofilter(sampler2D videoFrame,
         Byt += By*Bt;
     }
 
-    float det = Bxx*Byy - Bxy*Bxy;
+    float det = Bxx*Byy - Bxy*Bxy + 1.0e-5*bar;
     float ninvdet = -1.0/det;
     float u = (Byy*Bxt - Bxy*Byt) * ninvdet;
     float v = (Bxx*Byt - Bxy*Bxt) * ninvdet;
-
-    float V = bar * sqrt(u*u + v*v);
-    float C = V;
-
-    return foo*texture2D(videoFrame, uv) + (1.0-foo)*C*vec4(tone, 1.0);
+  
+    vec2 flow = 100.0 * foo * vec2(u, v);
+    
+    float R = pow(mix(1.0, c_curr.r, sqrt(dot(flow, flow))), gam);
+    float G = pow(mix(1.0, c_curr.g, sqrt(dot(flow, flow))), gam);
+    float B = pow(mix(1.0, c_curr.b, sqrt(dot(flow, flow))), gam);
+  
+    return vec4(tone*vec3(R, G, B), 1.0);
+    */
 }
     `;
 }
@@ -126,6 +170,8 @@ Filter.prototype.syncProgram = function(vidfilt, program)
 {
     program.uniformF("foo", this.params.foo);
     program.uniformF("bar", this.params.bar);
+    program.uniformF("fud", this.params.fud);
+    program.uniformF("gam", this.params.gam);
     program.uniform3Fv("tone", this.params.tone);
 }
 
@@ -134,8 +180,10 @@ Filter.prototype.getURL = function() { return "https://github.com/portsmouth/vid
 
 Filter.prototype.initGui = function(gui)
 {
-    gui.addSlider(this.params, {name: 'foo', min: 0.0, max: 1.0});
-    gui.addSlider(this.params, {name: 'bar', min: 0.0, max: 5.0});
+    gui.addSlider(this.params, {name: 'foo', min: 0.0, max: 100.0});
+    gui.addSlider(this.params, {name: 'bar', min: 0.0, max: 1.0});
+    gui.addSlider(this.params, {name: 'fud', min: 0.0, max: 0.5});
+    gui.addSlider(this.params, {name: 'gam', min: 0.0, max: 10.0});
     gui.addColor(this.params, "tone", 1.0);
 }
 
@@ -146,39 +194,21 @@ Filter.prototype.initGui = function(gui)
 <?/*                            main loop                              */?>
 <?/* ------------------------------------------------------------------*/?>
 
+<video id="video" controls loop>
+    Your browser doesn't appear to support the HTML5 <code>&lt;video&gt;</code> element.
+</video>
+
 <script type="text/javascript">
-
-var videoElement;
-var vidfilt;
-var intervalID;
-
 
 function onLoad()
 {
-    vidfilt = new Vidfilt(new Filter());
-
-    videoElement = document.getElementById('video');
-	videoElement.addEventListener('canplaythrough', startVideo, true);
-    videoElement.addEventListener('ended', videoDone, true);
-    
-    videoElement.preload = 'auto';
-    //videoElement.src = 'https://rawgit.com/portsmouth/testvids/master/eyecontact.mp4';
+    var videoElement = document.getElementById('video');
     videoElement.src = 'https://rawgit.com/portsmouth/testvids/master/bladerunnerTheJump.mp4'
     
-    videoElement.crossOrigin = "";
+    var vidfilt = new Vidfilt(new Filter(), videoElement);
 }
 
-function startVideo()
-{
-    videoElement.play();
-    let THIS = vidfilt;
-    intervalID = setInterval(function() { THIS.render(); }, 15);
-}
 
-function videoDone()
-{
-    videoElement.play();
-}
 
 </script>
 

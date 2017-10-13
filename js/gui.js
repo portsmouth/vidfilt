@@ -1,8 +1,8 @@
 
-/** @constructor 
+/** @constructor
 * Interface to the dat.GUI UI.
 */
-var GUI = function(visible = true) 
+var GUI = function(visible = true)
 {
 	// Create dat gui
 	this.gui = new dat.GUI();
@@ -16,7 +16,7 @@ var GUI = function(visible = true)
 		this.gui.__proto__.constructor.toggleHide();
 }
 
-function updateDisplay(gui) 
+function updateDisplay(gui)
 {
     for (var i in gui.__controllers) {
         gui.__controllers[i].updateDisplay();
@@ -40,7 +40,7 @@ GUI.prototype.toggleHide = function()
 	this.visible = !this.visible;
 }
 
-function hexToRgb(hex) 
+function hexToRgb(hex)
 {
     var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? {
@@ -66,7 +66,7 @@ GUI.prototype.createRendererSettings = function()
 GUI.prototype.createFilterSettings = function()
 {
 	var filterObj = vidfilt.getFilter();
-	if (typeof filterObj.initGui !== "undefined") 
+	if (typeof filterObj.initGui !== "undefined")
 	{
 		this.userFolder = this.gui.addFolder('Filter');
 		filterObj.initGui(this);
@@ -75,7 +75,7 @@ GUI.prototype.createFilterSettings = function()
 	}
 }
 
-/** 
+/**
  * Add a dat.GUI UI slider to control a float parameter.
  * The scene parameters need to be organized into an Object as
  * key-value pairs, for supply to this function.
@@ -84,7 +84,7 @@ GUI.prototype.createFilterSettings = function()
  * @param {Object} folder - optionally, pass the dat.GUI folder to add the parameter to (defaults to the main scene folder)
  * @returns {Object} the created dat.GUI slider item
  * @example
- *		Scene.prototype.initGui = function(gui)            
+ *		Scene.prototype.initGui = function(gui)
  *		{
  *			gui.addSlider(this.parameters, c);
  *			gui.addSlider(this.parameters, {name: 'foo2', min: 0.0, max: 1.0});
@@ -105,12 +105,12 @@ GUI.prototype.addSlider = function(parameters, param, folder=undefined)
 	var item;
 	if (step==null || step==undefined) { item = _f.add(parameters, name, min, max, step); }
 	else                               { item = _f.add(parameters, name, min, max);       }
-	item.onChange( function(value) { vidfilt.reset(no_recompile); } );
+	item.onChange( function(value) { vidfilt.render(); } );
 	item.onFinishChange( function(value) { } );
 	return item;
 }
 
-/** 
+/**
  * Add a dat.GUI UI color picker to control a 3-element array parameter (where the RGB color channels are mapped into [0,1] float range)
  * @param {Object} parameters - the parameters object for the scene, with a key-value pair (where value is a 3-element array) for the color parameter name
  * @param {Object} name - the color parameter name
@@ -138,7 +138,7 @@ GUI.prototype.addColor = function(parameters, name, scale=1.0, folder=undefined)
 									parameters[name][1] = scale * color[1] / 255.0;
 									parameters[name][2] = scale * color[2] / 255.0;
 								}
-								vidfilt.reset(true);
+								vidfilt.render();
 							} );
 	return item;
 }
@@ -166,6 +166,3 @@ GUI.prototype.getUserFolder = function()
 {
 	return this.userFolder;
 }
-
-
-

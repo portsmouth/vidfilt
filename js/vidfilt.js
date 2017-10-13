@@ -1,15 +1,16 @@
 
-/** 
+/**
 * Vidfilt is the global object providing access to all functionality in the system.
-* @constructor 
+* @constructor
 * @param {Filter} sceneObj - The object defining the filter we apply
 */
-var Vidfilt = function(filterObj)
+var Vidfilt = function(filterObj, videoElement)
 {
 	this.initialized = false;
 	this.terminated = false;
 	this.rendering = false;
 	this.filterObj = filterObj;
+  this.videoElement = videoElement;
 	vidfilt = this;
 
 	let container = document.getElementById("container");
@@ -54,7 +55,44 @@ var Vidfilt = function(filterObj)
 	window.addEventListener( 'click', this, false );
 	window.addEventListener( 'keydown', this, false );
 
-	this.initialized = true; 
+  this.videoElement.addEventListener('canplaythrough', startVideo, true);
+  this.videoElement.addEventListener('ended', videoDone, true);
+
+  let ME = this;
+  this.videoElement.addEventListener("seeked", function(event) {
+    if(videoElement.currentTime === 0){
+        console.log('videoDone');
+        ME.reset();
+    }
+  });
+    
+  this.videoElement.preload = 'auto';
+  this.videoElement.crossOrigin = "";
+  
+  this.paused = false;
+	this.initialized = true;
+}
+
+function startVideo()
+{
+    this.play();
+    let THIS = vidfilt;
+    this.intervalID = setInterval(function() { THIS.render(); }, 15);
+}
+
+function videoDone()
+{
+  console.log('Video ended');
+}
+
+Vidfilt.prototype.pause = function()
+{
+    this.videoElement.pause();
+}
+
+Vidfilt.prototype.play = function()
+{
+    this.videoElement.play();
 }
 
 /**
@@ -82,7 +120,7 @@ Vidfilt.prototype.handleEvent = function(event)
 
 /**
 * Access to the Renderer object
-*  @returns {Renderer} 
+*  @returns {Renderer}
 */
 Vidfilt.prototype.getRenderer = function()
 {
@@ -96,14 +134,14 @@ Vidfilt.prototype.getFilter = function()
 
 /**
 * Access to the GUI object
-*  @returns {GUI} 
+*  @returns {GUI}
 */
 Vidfilt.prototype.getGUI = function()
 {
 	return this.gui;
 }
 
-/** 
+/**
  * @returns {WebGLRenderingContext} The webGL context
  */
 Vidfilt.prototype.getGLContext = function()
@@ -131,7 +169,7 @@ Vidfilt.prototype.dumpFilter = function()
 let renderer  = vidfilt.getRenderer();
 	`;
 
-	if (typeof this.filterObj.initGenerator !== "undefined") 
+	if (typeof this.filterObj.initGenerator !== "undefined")
 	{
 		code += this.filterObj.initGenerator();
 	}
@@ -152,9 +190,9 @@ renderer.gamma = ${renderer.gamma};
 Vidfilt.prototype.initFilter= function()
 {
 	if (this.filterObj == null) return;
-	if (typeof this.filterObj.program == "undefined") GLU.fail('Potential must define a "program" function!');
+	if (typeof this.filterObj.program == "undefined") GLU.fail('Filter must define a "program" function!');
 
-	// Call user-defined init function	
+	// Call user-defined init function
 	if (typeof this.filterObj.init != "undefined") this.filterObj.init(this);
 
 	// Read optional filter name and URL, if provided
@@ -179,12 +217,12 @@ Vidfilt.prototype.initFilter= function()
 
 // Renderer reset on camera or other parameters update
 Vidfilt.prototype.reset = function(no_recompile = false)
-{	
+{
 	if (!this.initialized || this.terminated) return;
 	this.renderer.reset(no_recompile);
 }
    
-// Render all 
+// Render all
 Vidfilt.prototype.render = function()
 {
 	var gl = GLU.gl;
@@ -197,9 +235,10 @@ Vidfilt.prototype.render = function()
 	this.rendering = true;
 
 	// Render video frame
-	this.renderer.render();
+  let new_frame = !this.paused;
+	this.renderer.render(this.videoElement, new_frame);
 
-	// Update HUD text canvas	
+	// Update HUD text canvas
 	this.textCtx.textAlign = "left";   	// This determines the alignment of text, e.g. left, center, right
 	this.textCtx.textBaseline = "middle";	// This determines the baseline of the text, e.g. top, middle, bottom
 	this.textCtx.font = '12px monospace';	// This determines the size of the text and the font family used
@@ -293,13 +332,13 @@ Vidfilt.prototype.resize = function()
 
 Vidfilt.prototype.onClick = function(event)
 {
-	if (this.onVidfiltLink) 
+	if (this.onVidfiltLink)
 	{
     	window.open("https://github.com/portsmouth/vidfilt");
     }
-    if (this.onUserLink) 
-	{		
-		window.open(this.filterURL);		
+    if (this.onUserLink)
+	{
+		window.open(this.filterURL);
     }
 	event.preventDefault();
 }
@@ -345,9 +384,23 @@ Vidfilt.prototype.onkeydown = function(event)
 			else console.assert(false);
 			break;
 
-		case 82: // R key: reset scene 
-			this.initPotential();
+		case 80: // P key: pause/play
+      if (!this.paused)
+      {
+        this.paused = true;
+        this.videoElement.pause();
+      }
+      else
+      {
+        this.paused = false;
+        this.videoElement.play();
+      }
 			break;
+      
+    case 82: // R key: reset scene
+      this.initFilter();
+      this.reset(true);
+      break;
 
 		case 72: // H key: toggle hide/show dat gui
 			this.guiVisible = !this.guiVisible;
@@ -360,5 +413,3 @@ Vidfilt.prototype.onkeydown = function(event)
 			break;
 	}
 }
-
-
